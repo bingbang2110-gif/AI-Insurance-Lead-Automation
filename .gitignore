@@ -1,0 +1,5 @@
+.env
+insurance.db
+.venv/
+__pycache__/
+*.pyc
