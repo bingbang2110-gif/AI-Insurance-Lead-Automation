@@ -40,7 +40,8 @@ def calculate_lead_score(lead):
         urgency = lead.urgency.lower()
 
         if (
-            "today" in urgency
+            "high" in urgency
+            or "today" in urgency
             or "immediately" in urgency
             or "within a week" in urgency
         ):

@@ -1,25 +1,39 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+import httpx
+import os
+from datetime import date
+from pydantic import BaseModel, Field, EmailStr , ConfigDict
 
 from app.database.database import SessionLocal
 from app.database.models import Lead
 from app.services.scoring import calculate_lead_score, calculate_priority
 
 class LeadCreate(BaseModel):
-    name: str | None = None
-    email: str | None = None
-    phone: str | None = None
-    vehicle_year: int | None = None
+    name: str = Field(min_length=1, strip_whitespace=True)
+    email: EmailStr
+    phone: str = Field(
+        min_length=7,
+        max_length=20,
+        pattern=r"^\+?[0-9\s()-]+$"
+)
+    vehicle_year: int | None = Field(default=None, ge=1886, le=2026)
     vehicle_make: str | None = None
     vehicle_model: str | None = None
     current_insurance: bool | None = None
-    coverage_type: str | None = None
-    policy_expiry: str | None = None
-    urgency: str | None = None
+    coverage_type: str | None = Field(
+    default=None,
+    pattern=r"^(life|health|auto|home|travel)$"
+)
+    policy_expiry: date | None = None
+    urgency: str | None = Field(
+    default=None,
+    pattern=r"^(immediately|high|today|within a week)$"
+)
     priority: str | None = None
 
 
 class LeadUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     name: str | None = None
     email: str | None = None
     phone: str | None = None
@@ -34,12 +48,13 @@ class LeadUpdate(BaseModel):
     coverage_type: str | None = None
     urgency: str | None = None
 
-    priority: str | None = None
+    
 
 router = APIRouter(
     prefix="/leads",
     tags=["Leads"]
 )
+
 def generate_lead_summary(lead):
     name = lead.name or "The customer"
 
@@ -59,28 +74,33 @@ def generate_lead_summary(lead):
     coverage = lead.coverage_type or "insurance coverage"
 
     if lead.current_insurance is True:
-        insurance_status = "currently insured"
+        insurance_sentence = "The customer is currently insured."
     elif lead.current_insurance is False:
-        insurance_status = "not currently insured"
+        insurance_sentence = "The customer is not currently insured."
     else:
-        insurance_status = "insurance status is unknown"
+        insurance_sentence = "The customer's insurance status is unknown."
 
-    expiry = (
-        lead.policy_expiry
-        or "their policy expiry date is unknown"
-    )
+    if lead.policy_expiry:
+        expiry_sentence = (
+            f"Their current policy expires on {lead.policy_expiry}."
+        )
+    else:
+        expiry_sentence = "Their policy expiry date is unknown."
 
-    urgency = (
-        lead.urgency
-        or "with no specific urgency"
-    )
+    if lead.urgency:
+        urgency_sentence = (
+            f"Insurance is needed {lead.urgency.lower()}."
+        )
+    else:
+        urgency_sentence = ""
 
     return (
         f"{name} is looking for {coverage} for a {vehicle}. "
-        f"The customer is {insurance_status} and their current "
-        f"policy expires on {expiry}. "
-        f"Insurance is needed {urgency.lower()}."
+        f"{insurance_sentence} "
+        f"{expiry_sentence} "
+        f"{urgency_sentence}"
     )
+
 
 @router.get("/")
 
@@ -111,7 +131,7 @@ def create_lead(lead_data: LeadCreate):
             coverage_type=lead_data.coverage_type,
             policy_expiry=lead_data.policy_expiry,
             urgency=lead_data.urgency,
-            priority=lead_data.priority
+            #priority=lead_data.priority
         )
 
         score = calculate_lead_score(lead)
@@ -125,6 +145,33 @@ def create_lead(lead_data: LeadCreate):
         db.add(lead)
         db.commit()
         db.refresh(lead)
+        n8n_webhook_url = os.getenv("N8N_WEBHOOK_URL")
+
+        if n8n_webhook_url:
+            payload = {
+                "event": "lead.created",
+                "lead_id": lead.id,
+                "name": lead.name,
+                "email": lead.email,
+                "phone": lead.phone,
+                "priority": lead.priority,
+                "lead_score": lead.lead_score,
+                "coverage_type": lead.coverage_type,
+                "urgency": lead.urgency,
+                "summary": lead.summary,
+            }
+
+            try:
+                response = httpx.post(
+                    n8n_webhook_url,
+                    json=payload,
+                    timeout=5.0
+                )
+                response.raise_for_status()
+                print("n8n webhook sent successfully")
+            except httpx.HTTPError as e:
+                print("n8n webhook error:", e)
+
 
         return lead
 
@@ -135,7 +182,6 @@ def create_lead(lead_data: LeadCreate):
 @router.get("/filter/search")
 def filter_leads(
     search: str | None = None,
-    priority: str | None = None,
     coverage_type: str | None = None,
     urgency: str | None = None,
     vehicle_make: str | None = None,
@@ -367,15 +413,36 @@ def update_lead(
         lead.summary = generate_lead_summary(lead)
 
         # Recalculate priority
-        if lead.lead_score >= 80:
-            lead.priority = "high"
-        elif lead.lead_score >= 50:
-            lead.priority = "medium"
-        else:
-            lead.priority = "low"
-
+        lead.priority = calculate_priority(lead.lead_score)
+        
         db.commit()
         db.refresh(lead)
+        n8n_webhook_url = os.getenv("N8N_WEBHOOK_URL")
+
+        if n8n_webhook_url:
+            payload = {
+                "event": "lead.updated",
+                "lead_id": lead.id,
+                "name": lead.name,
+                "email": lead.email,
+                "phone": lead.phone,
+                "priority": lead.priority,
+                "lead_score": lead.lead_score,
+                "coverage_type": lead.coverage_type,
+                "urgency": lead.urgency,
+                "summary": lead.summary,
+            }
+
+            try:
+                response = httpx.post(
+                    n8n_webhook_url,
+                    json=payload,
+                    timeout=5.0
+                )
+                response.raise_for_status()
+                print("n8n webhook sent successfully")
+            except httpx.HTTPError as e:
+                print("n8n webhook error:", e)
 
         return lead
 
