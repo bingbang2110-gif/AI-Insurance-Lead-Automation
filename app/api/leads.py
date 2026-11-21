@@ -35,18 +35,33 @@ class LeadCreate(BaseModel):
 class LeadUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str | None = None
-    email: str | None = None
-    phone: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = Field(
+        default=None,
+        min_length=7,
+        max_length=20,
+        pattern=r"^\+?[0-9\s()-]+$"
+    )
 
-    vehicle_year: int | None = None
+    vehicle_year: int | None = Field(
+        default=None,
+        ge=1886,
+        le=2026
+    )
     vehicle_make: str | None = None
     vehicle_model: str | None = None
 
     current_insurance: bool | None = None
-    policy_expiry: str | None = None
+    policy_expiry: date | None = None
 
-    coverage_type: str | None = None
-    urgency: str | None = None
+    coverage_type: str | None = Field(
+        default=None,
+        pattern=r"^(life|health|auto|home|travel)$"
+    )
+    urgency: str | None = Field(
+        default=None,
+        pattern=r"^(immediately|high|today|within a week)$"
+    )
 
     
 
@@ -182,6 +197,7 @@ def create_lead(lead_data: LeadCreate):
 @router.get("/filter/search")
 def filter_leads(
     search: str | None = None,
+    priority: str | None = None,
     coverage_type: str | None = None,
     urgency: str | None = None,
     vehicle_make: str | None = None,

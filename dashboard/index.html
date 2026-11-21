@@ -693,7 +693,7 @@ tbody tr:hover {
 
     <select id="add-coverage">
         <option value="">Coverage</option>
-        <option value="Full coverage">Full coverage</option>
+        <option value="auto">Full coverage</option>
         <option value="Third-party">Third-party</option>
     </select>
 
@@ -704,8 +704,8 @@ tbody tr:hover {
 
     <select id="add-urgency">
         <option value="">Urgency</option>
-        <option value="Immediately">Immediately</option>
-        <option value="Within a week">Within a week</option>
+        <option value="immediately">Immediately</option>
+        <option value="within a week">Within a week</option>
         <option value="Within a month">Within a month</option>
     </select>
 
@@ -757,7 +757,7 @@ tbody tr:hover {
 
         <select id="coverage-filter">
             <option value="">All</option>
-            <option value="Full coverage">Full coverage</option>
+            <option value="auto">Full coverage</option>
             <option value="Third-party">Third-party</option>
         </select>
     </div>
@@ -768,8 +768,8 @@ tbody tr:hover {
 
         <select id="urgency-filter">
             <option value="">All</option>
-            <option value="Immediately">Immediately</option>
-            <option value="Within a week">Within a week</option>
+            <option value="immediately">Immediately</option>
+            <option value="within a week">Within a week</option>
             <option value="Within a month">Within a month</option>
         </select>
     </div>
@@ -1376,8 +1376,8 @@ editButton.onclick = () => {
             <label>Coverage</label>
             <select id="edit-coverage">
                 <option value="">Select</option>
-                <option value="Full coverage"
-                    ${lead.coverage_type === "Full coverage" ? "selected" : ""}>
+                <option value="auto"
+                    ${lead.coverage_type === "auto" ? "selected" : ""}>
                     Full coverage
                 </option>
                 <option value="Third-party"
@@ -1399,7 +1399,7 @@ editButton.onclick = () => {
                     ${lead.urgency === "Immediately" ? "selected" : ""}>
                     Immediately
                 </option>
-                <option value="Within a week"
+                <option value="within a week"
                     ${lead.urgency === "Within a week" ? "selected" : ""}>
                     Within a week
                 </option>
@@ -1495,8 +1495,6 @@ async function saveLeadChanges(leadId) {
         urgency:
             document.getElementById("edit-urgency").value || null,
 
-        priority:
-            document.getElementById("edit-priority").value || null
     };
 
     try {
