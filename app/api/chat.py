@@ -1,3 +1,5 @@
+import os
+import httpx
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -27,6 +29,37 @@ def update_lead_from_ai(lead: Lead, message: str):
     """
 
     data = extract_lead_information(message)
+
+    # Normalize urgency values
+    urgency = data.get("urgency")
+
+    if urgency == "immediate":
+        urgency = "immediately"
+
+    # Fallback: detect urgency directly from the message
+    if not urgency:
+        lower_message = message.lower().strip()
+
+        if any(phrase in lower_message for phrase in [
+            "immediately",
+            "immediate",
+            "right now",
+            "today",
+            "asap",
+            "as soon as possible",
+            "urgent"
+        ]):
+            urgency = "immediately"
+
+        elif any(phrase in lower_message for phrase in [
+            "within a week",
+            "this week",
+            "next week"
+        ]):
+            urgency = "within a week"
+
+    if urgency:
+        data["urgency"] = urgency
 
     for field, value in data.items():
         if value is not None:
@@ -431,6 +464,8 @@ def chat(request: ChatRequest):
         # -------------------------
         # Save user's answer
         # -------------------------
+        # Check whether lead was already complete
+        was_complete = get_next_question(lead) is None
         update_lead_from_ai(
             lead,
             request.message
@@ -484,6 +519,45 @@ def chat(request: ChatRequest):
         # -------------------------
         db.commit()
         db.refresh(lead)
+        # -------------------------
+        # Send completed lead to n8n
+        # -------------------------
+        if status == "completed" and not was_complete:
+
+            n8n_webhook_url = os.getenv("N8N_WEBHOOK_URL")
+
+            if n8n_webhook_url:
+                payload = {
+                    "event": "lead.completed",
+                    "lead_id": lead.id,
+                    "name": lead.name,
+                    "email": lead.email,
+                    "phone": lead.phone,
+                    "priority": lead.priority,
+                    "lead_score": lead.lead_score,
+                    "coverage_type": lead.coverage_type,
+                    "urgency": lead.urgency,
+                    "summary": lead.summary,
+                }
+
+                try:
+                    response = httpx.post(
+                        n8n_webhook_url,
+                        json=payload,
+                        timeout=5.0
+                    )
+                    response.raise_for_status()
+                    print("n8n completion webhook sent successfully")
+
+                except httpx.HTTPError as e:
+                    print("n8n webhook error:", e)
+
+        return {
+            "session_id": request.session_id,
+            "reply": reply,
+            "status": status,
+            "lead": lead
+        }
 
         return {
             "session_id": request.session_id,
