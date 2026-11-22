@@ -187,6 +187,20 @@ The core backend, AI-powered lead qualification, dashboard, and n8n email automa
 - Improved AI reliability and validation
 - Production deployment and monitoring
 
+## Screenshots
+
+### Analytics Dashboard
+![Analytics Dashboard](screenshots/01-analytics.png)
+
+### Leads Table
+![Leads Table](screenshots/02-leads-table.png)
+
+### Search and Filters
+![Search and Filters](screenshots/03-search-filters.png)
+
+### Add New Lead
+![Add New Lead](screenshots/04-add-lead.png)
+
 ## Author
 
 GitHub: https://github.com/bingbang2110-gif

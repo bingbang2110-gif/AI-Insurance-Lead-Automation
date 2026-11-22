@@ -585,6 +585,28 @@ tbody tr:hover {
     outline: none;
     border-color: #6b7280;
 }
+#priority-chart,
+#insurance-chart {
+    width: 100% !important;
+    height: 220px !important;
+    max-height: 220px;
+}
+.charts-container {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    align-items: stretch;
+}
+
+.chart-card {
+    min-width: 0;
+}
+
+@media (max-width: 700px) {
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
+}
     </style>
 </head>
 
@@ -946,7 +968,8 @@ if (priorityCanvas) {
         },
 
         options: {
-            responsive: true
+             responsive: true,
+             maintainAspectRatio: false
         }
 
     });
@@ -977,7 +1000,8 @@ if (insuranceCanvas) {
         },
 
         options: {
-            responsive: true
+             responsive: true,
+             maintainAspectRatio: false
         }
 
     });
