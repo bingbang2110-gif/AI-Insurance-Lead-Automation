@@ -1,15 +1,16 @@
+from typing import Annotated
 from fastapi import APIRouter, HTTPException
 import httpx
 import os
 from datetime import date
-from pydantic import BaseModel, Field, EmailStr , ConfigDict
+from pydantic import BaseModel, Field, EmailStr, ConfigDict, StringConstraints
 
 from app.database.database import SessionLocal
 from app.database.models import Lead
 from app.services.scoring import calculate_lead_score, calculate_priority
 
 class LeadCreate(BaseModel):
-    name: str = Field(min_length=1, strip_whitespace=True)
+    name: Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)]
     email: EmailStr
     phone: str = Field(
         min_length=7,
