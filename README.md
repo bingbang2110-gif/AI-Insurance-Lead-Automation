@@ -190,16 +190,16 @@ The core backend, AI-powered lead qualification, dashboard, and n8n email automa
 ## Screenshots
 
 ### Analytics Dashboard
-![Analytics Dashboard](screenshots/01-analytics.png)
+![Analytics Dashboard](screenshots/01-analytics.PNG)
 
 ### Leads Table
-![Leads Table](screenshots/02-leads-table.png)
+![Leads Table](screenshots/02-leads-table.PNG)
 
 ### Search and Filters
-![Search and Filters](screenshots/03-search-filters.png)
+![Search and Filters](screenshots/03-search-filters.PNG)
 
 ### Add New Lead
-![Add New Lead](screenshots/04-add-lead.png)
+![Add New Lead](screenshots/04-add-lead.PNG)
 
 ## Author
 
