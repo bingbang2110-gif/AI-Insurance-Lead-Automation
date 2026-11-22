@@ -86,3 +86,27 @@ def test_get_nonexistent_lead(client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Lead not found"
+def test_create_lead_with_invalid_email(client):
+    response = client.post(
+        "/leads/",
+        json={
+            "name": "Ali Test",
+            "email": "invalid-email",
+            "phone": "+989121234567",
+            "coverage_type": "auto",
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_create_lead_with_empty_name(client):
+    response = client.post(
+        "/leads/",
+        json={
+            "name": "   ",
+            "email": "ali@example.com",
+            "phone": "+989121234567",
+            "coverage_type": "auto",
+        },
+    )
+    assert response.status_code == 422
